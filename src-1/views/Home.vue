@@ -1,18 +1,18 @@
 <template>
   <div class="home">
     <v-touch
-      class="hello"
-      :style="helloStyle"
       v-on:panstart="onPanstart"
       v-on:panmove="onPanmove"
       v-on:panend="onPanend"
       v-on:pancancel="onPanend"
     >
-      <div class="hello-body">
+      <div class="hello-body" :style="footerStyle">
         <div class="a"></div>
         <div class="b"></div>
-        <div class="c">
-          <div v-for="item in 100" :key="item">{{ item }}</div>
+        <div class="c" ref="cRef">
+          <ul>
+            <li v-for="item in 20" :key="item">{{ item }}</li>
+          </ul>
         </div>
       </div>
     </v-touch>
@@ -20,39 +20,64 @@
 </template>
 
 <script>
+// import BetterScroll from "better-scroll";
 export default {
   name: "Home",
 
   data() {
     return {
-      top: 500,
-      minTop: 100,
-      maxTop: 500,
+      fastTouch: false, // 快速移动
+      top: 400,
+      minTop: 200,
+      maxTop: 400,
     };
   },
 
   computed: {
-    helloStyle() {
-      return {
-        transform: `translate3d(0, ${this.top}px, 0)`,
-      };
+    footerStyle() {
+      if (this.fastTouch) {
+        return {
+          top: `${this.top}px`,
+          transition: "top 300ms ease-in",
+        };
+      } else {
+        return {
+          top: `${this.top}px`,
+        };
+      }
     },
+    isExpand() {
+      return this.top === this.minTop;
+    },
+  },
+
+  watch: {
+    isExpand() {
+      this.bs.refresh();
+    },
+  },
+
+  mounted() {
+    // this.bs = new BetterScroll(".c");
+    // this.bs.disable();
   },
 
   methods: {
     range(num, min, max) {
       return Math.min(Math.max(num, min), max);
     },
-    onPanstart(e) {
-      console.log("onPanstart", e);
+    onPanstart() {
+      this.fastTouch = false;
       this.recordY = this.top;
     },
     onPanmove(e) {
+      if (this.$refs.cRef.contains(e.target)) return;
       console.log("onPanmove", e);
       this.top = this.range(this.recordY + e.deltaY, this.minTop, this.maxTop);
     },
     onPanend(e) {
-      console.log("onPanend", e);
+      if (this.$refs.cRef.contains(e.target)) return;
+      this.fastTouch = true;
       if (e.deltaY <= 0) {
         this.top = this.minTop;
       } else {
@@ -69,21 +94,19 @@ export default {
   background-color: #ccc;
 }
 
-.hello {
-  position: fixed;
-  width: 100%;
-  top: 0;
-  left: 0;
-}
-
 .hello-body {
-  height: 636px;
+  position: fixed;
+  top: 100%;
+  bottom: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  touch-action: pan-y !important;
 }
 
 .a {
+  flex-shrink: 0;
   margin: 10px auto;
   width: 90vw;
   height: 50px;
@@ -91,6 +114,7 @@ export default {
 }
 
 .b {
+  flex-shrink: 0;
   margin-bottom: 10px;
   height: 100px;
   background-color: green;
@@ -98,9 +122,17 @@ export default {
 
 .c {
   flex: 1;
+  display: flex;
   background-color: greenyellow;
-  overflow-y: auto;
-  > div {
+  overflow: hidden;
+  touch-action: pan-y !important;
+  ul {
+    width: 100%;
+    height: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  li {
     height: 50px;
   }
 }
